@@ -1,0 +1,118 @@
+# Stock Alert Monitor Configuration
+
+# List of stocks to monitor as a high-growth watchlist (entry signals only).
+stocks:
+  - QXO
+  - HSPS
+  - IREN
+  - ASTS
+  - KRKNF
+  - ONDS
+  - TE
+  - HIMS
+  - PDYN
+  - RR
+  - VST
+  - CLS
+  - SLDP
+  - 000660.KS # hynix
+  - 005380.KS #hyundai
+# High-growth strategy: manually maintained bought positions (per-lot model)
+# Each lot is one actual buy you executed on any broker.
+# The system NEVER edits or deletes these; you manage them manually.
+bought_positions:
+  - id: "IREN"   # Any unique, stable ID you choose
+    symbol: IREN              # Ticker
+    entry_price: 45.37        # Executed entry price
+    shares: 30                # Number of shares bought in this lot
+    # entry_date: "2026-02-04"  # Optional, for your reference only
+  - id: "HIMS"              
+    symbol: HIMS              
+    entry_price: 28.23        
+    shares: 120                
+    # entry_date: "2026-01-02"
+  - id: "Aeroenvironment"              
+    symbol: AVAV              
+    entry_price: 284.33        
+    shares: 3                
+    # entry_date: "2026-01-02"
+  - id: "Palantir"              
+    symbol: PLTR              
+    entry_price: 90.60        
+    shares: 20                
+    # entry_date: "2026-09-10"
+  - id: "ASTS"              
+    symbol: ASTS              
+    entry_price: 85.26        
+    shares: 12                
+    # entry_date: "2026-01-02"
+  - id: "Vertiv"              
+    symbol: VRT              
+    entry_price: 78.88        
+    shares: 95                
+    # entry_date: "2025-09-10"
+  - id: "OKLO"              
+    symbol: OKLO              
+    entry_price: 27.34        
+    shares: 110                
+    # entry_date: "2025-09-10"
+  - id: "NuScale"              
+    symbol: SMR              
+    entry_price: 18.85        
+    shares: 180                
+    # entry_date: "2025-09-10"
+  - id: "DWave"              
+    symbol: QBTS              
+    entry_price: 29.85        
+    shares: 40                
+    # entry_date: "2026-01-02"
+  - id: "Firefly"              
+    symbol: FLY              
+    entry_price: 25.41        
+    shares: 40                
+    # entry_date: "2026-01-02"
+  - id: "Redwire"              
+    symbol: RDW              
+    entry_price: 9.55        
+    shares: 55                
+    # entry_date: "2026-01-02"
+  - id: "Joby"              
+    symbol: JOBY              
+    entry_price: 5.56        
+    shares: 600                
+    # entry_date: "2025-09-10"
+  - id: "Archer"              
+    symbol: ACHR              
+    entry_price: 8.25        
+    shares: 390                
+    # entry_date: "2025-09-10"
+  - id: "Archer"              
+    symbol: ACHR              
+    entry_price: 8.25        
+    shares: 390                
+    # entry_date: "2025-09-10"
+  
+
+# Scheduling parameters
+scheduling:
+  # Number of times per day to check (cron/Task Scheduler will handle actual timing)
+  checks_per_day: 4
+  # Example cron schedule: "0 9,12,15,18 * * *" (9am, 12pm, 3pm, 6pm)
+
+# Notification settings
+notifications:
+  telegram:
+    enabled: true
+    # Bot token and chat ID are in .env file
+  
+  # Status notification frequency
+  # Options: "every_run" (send on each scheduler execution), "weekly" (once per week), "disabled" (no status messages)
+  # Start with "every_run" to verify behavior, then switch to "weekly" to minimize noise
+  status_frequency: "every_run"
+
+# Data settings
+data:
+  # Cache data for this many days
+  cache_days: 365
+  # Refresh data if older than this many hours
+  refresh_hours: 1
