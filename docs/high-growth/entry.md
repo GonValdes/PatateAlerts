@@ -147,4 +147,4 @@ For each tracked stock, report:
 
 ### Notes
 - Reports are generated daily for all stocks meeting the conditions
-- All-time high is computed from all available historical data
+- For the tracking report, the all-time high is the highest close within the last 3 years

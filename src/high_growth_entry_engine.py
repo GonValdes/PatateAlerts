@@ -20,6 +20,7 @@ class HighGrowthEntryEngine:
 
     SMA200_PERIOD = 200
     DMA1000_PERIOD = 1000  # 200 WMA = 200×5 days = 1000 DMA
+    TRACKING_ATH_DAYS = 252 * 3  # 3 years for "drop from all-time high" in tracking report
 
     def __init__(
         self,
@@ -292,7 +293,9 @@ class HighGrowthEntryEngine:
             triggers.append("200 WMA")
         trigger_text = " and ".join(triggers)
 
-        ath = max(closes)
+        # ATH for tracking = highest close within last 3 years (per docs)
+        lookback_closes = closes[-self.TRACKING_ATH_DAYS:] if len(closes) >= self.TRACKING_ATH_DAYS else closes
+        ath = max(lookback_closes)
         drop_from_ath = ((ath - current_close) / ath) * 100
         pct_from_dma = ((current_close - dma200) / dma200) * 100 if dma200 else None
         pct_from_wma = ((current_close - wma200) / wma200) * 100 if wma200 else None
