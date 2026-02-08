@@ -109,24 +109,20 @@ class HighGrowthExitEngine:
         new_stops: List[str] = []
         exits: List[Tuple[str, int]] = []
 
-        if not state["structural_exit_triggered"]:
-            structural_exit_shares = self._check_structural_filter(
-                symbol=symbol,
-                current_close=current_close,
-                current_date=current_date,
-                state=state,
-            )
-            if structural_exit_shares > 0:
-                exits.append(("Structural trend filter (weekly close < 200DMA)", structural_exit_shares))
-                state["structural_exit_triggered"] = True
+        structural_exit_shares = self._check_structural_filter(
+            symbol=symbol,
+            current_close=current_close,
+            current_date=current_date,
+            state=state,
+        )
+        if structural_exit_shares > 0:
+            exits.append(("Structural trend filter (weekly close < 200DMA)", structural_exit_shares))
 
         if (
-            not state["early_failure_triggered"]
-            and state.get("initial_stop_price") is not None
+            state.get("initial_stop_price") is not None
             and current_close < state["initial_stop_price"]
         ):
             exits.append(("Early failure stop (Entry − 2 × ATR_entry)", state["shares_original"]))
-            state["early_failure_triggered"] = True
 
         stop1_new = self._maybe_define_stop1(entry_price, state, current_close, symbol)
         if stop1_new is not None:
@@ -144,6 +140,8 @@ class HighGrowthExitEngine:
             )
 
         state["last_eval_date"] = current_date
+        state["structural_exit_triggered"] = False
+        state["early_failure_triggered"] = False
         self.lot_state.upsert_state(state)
 
     def _ensure_historical_cache(self, symbol: str) -> None:
@@ -315,7 +313,8 @@ class HighGrowthExitEngine:
     ) -> None:
         """Send unified notification. First time: all applicable stops. Otherwise: new stops/exits only."""
         lines = [f"{symbol} ({lot_id})"]
-        
+        if exits:
+            lines.append(f"Latest close: ${current_close:.2f}")
         if is_first_time:
             applicable_stops = self._get_all_applicable_stops(entry_price, current_close, state)
             for stop_name, stop_price, exit_shares in applicable_stops:
@@ -324,7 +323,7 @@ class HighGrowthExitEngine:
             lines.extend(new_stops)
         
         for label, shares in exits:
-            lines.append(f"SELL: {shares} shares")
+            lines.append(f"SELL: {shares} shares — {label}")
         
         if len(lines) <= 1 and not is_first_time:
             return

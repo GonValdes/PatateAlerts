@@ -19,6 +19,7 @@ class HighGrowthEntryEngine:
     """Applies high-growth entry rules per symbol."""
 
     SMA200_PERIOD = 200
+    DMA1000_PERIOD = 1000  # 200 WMA = 200×5 days = 1000 DMA
 
     def __init__(
         self,
@@ -56,7 +57,7 @@ class HighGrowthEntryEngine:
         current_date = latest["date"]
 
         self._ensure_historical_cache(symbol)
-        hist = self.price_history.get_historical_prices(symbol, days=260)
+        hist = self.price_history.get_historical_prices(symbol, days=self.DMA1000_PERIOD + 100)
         if len(hist) < self.SMA200_PERIOD:
             logger.info("Not enough history for 200DMA / entry rules on %s (have %d days)", symbol, len(hist))
             return
@@ -67,13 +68,15 @@ class HighGrowthEntryEngine:
         latest_dma200 = dma200_series[-1]
 
         if latest_dma200 is not None:
-            tracking_msg = self._check_tracking(symbol, hist, closes, latest_dma200, current_close)
+            wma200_as_dma1000 = None
+            if len(hist) >= self.DMA1000_PERIOD:
+                dma1000_series = self._compute_sma_series(closes, self.DMA1000_PERIOD)
+                wma200_as_dma1000 = dma1000_series[-1]
+            tracking_msg = self._check_tracking(
+                symbol, hist, closes, latest_dma200, current_close, wma200_as_dma1000
+            )
             if tracking_msg:
                 self._send_tracking_alert(symbol, tracking_msg)
-
-        if latest_dma200 is None or current_close < latest_dma200:
-            logger.debug("Global entry condition failed for %s: close %.2f < 200DMA %.2f", symbol, current_close, latest_dma200 or float("nan"))
-            return
 
         state = self.entry_state.get_state(symbol) or self.entry_state.create_default_state(symbol)
         messages: List[str] = []
@@ -96,13 +99,14 @@ class HighGrowthEntryEngine:
         self.entry_state.upsert_state(state)
 
     def _ensure_historical_cache(self, symbol: str) -> None:
-        """Ensure we have enough history cached for 200DMA and entry rules."""
-        hist = self.price_history.get_historical_prices(symbol, days=260)
-        if len(hist) >= self.SMA200_PERIOD:
+        """Ensure we have enough history cached for 200DMA, 1000 DMA (200 WMA), and entry rules."""
+        min_days = self.DMA1000_PERIOD + 100
+        hist = self.price_history.get_historical_prices(symbol, days=min_days)
+        if len(hist) >= min_days:
             return
 
         logger.info("Fetching additional historical data for %s", symbol)
-        for row in self.data_provider.get_historical_prices(symbol, days=260):
+        for row in self.data_provider.get_historical_prices(symbol, days=min_days):
             self.price_history.insert_or_update(
                 symbol=symbol,
                 date=row["date"],
@@ -273,27 +277,38 @@ class HighGrowthEntryEngine:
         closes: List[float],
         dma200: Optional[float],
         current_close: float,
+        wma200: Optional[float] = None,
     ) -> Optional[str]:
-        """Check if stock should be tracked (within 5% or below 200 SMA)."""
-        if dma200 is None or current_close > dma200 * 1.05:
+        """Check if stock should be tracked (within 5% or below 200 DMA, or within 10% or below 200 WMA)."""
+        triggered_by_dma = dma200 is not None and current_close <= dma200 * 1.05
+        triggered_by_wma = wma200 is not None and current_close <= wma200 * 1.10
+        if not triggered_by_dma and not triggered_by_wma:
             return None
-        
+
+        triggers = []
+        if triggered_by_dma:
+            triggers.append("200 DMA")
+        if triggered_by_wma:
+            triggers.append("200 WMA")
+        trigger_text = " and ".join(triggers)
+
         ath = max(closes)
         drop_from_ath = ((ath - current_close) / ath) * 100
-        pct_from_dma = ((current_close - dma200) / dma200) * 100
-        
-        return (
-            f"Symbol: {symbol}\n"
-            f"Current close: {current_close:.2f}\n"
-            f"200 DMA: {dma200:.2f}\n"
-            f"All-time high: {ath:.2f}\n"
-            f"Drop from ATH: {drop_from_ath:.2f}%\n"
-            f"Position vs 200 DMA: {pct_from_dma:+.2f}%"
-        )
+        pct_from_dma = ((current_close - dma200) / dma200) * 100 if dma200 else None
+        pct_from_wma = ((current_close - wma200) / wma200) * 100 if wma200 else None
+
+        lines = [
+            f"Symbol: {symbol}",
+            f"Triggered by: {trigger_text}",
+            f"Drop from all-time high: {drop_from_ath:.2f}%",
+            f"Position relative to 200 DMA: {pct_from_dma:+.2f}%" if pct_from_dma is not None else "Position relative to 200 DMA: N/A",
+            f"Position relative to 200 WMA: {pct_from_wma:+.2f}%" if pct_from_wma is not None else "Position relative to 200 WMA: N/A",
+        ]
+        return "\n".join(lines)
 
     def _send_tracking_alert(self, symbol: str, message: str) -> None:
-        """Send tracking alert for stocks performing poorly."""
-        full_message = "Tracking Alert — Stock Below/Within 5% of 200 SMA\n" + message
+        """Send tracking alert for stocks performing poorly (200 DMA or 200 WMA)."""
+        full_message = "Tracking Alert — Stock Near/Below 200 DMA or 200 WMA\n" + message
         for notifier in self.notifiers:
             if not notifier.enabled:
                 continue
@@ -308,7 +323,6 @@ class HighGrowthEntryEngine:
             "High-Growth Entry Alert",
             f"Symbol: {symbol}",
             f"Latest close: {current_close:.2f}",
-            f"200DMA (global condition satisfied): {dma200:.2f}",
             "",
         ])
         message = header + "\n\n".join(messages)

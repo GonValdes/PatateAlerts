@@ -86,11 +86,6 @@ bought_positions:
     entry_price: 8.25        
     shares: 390                
     # entry_date: "2025-09-10"
-  - id: "Archer"              
-    symbol: ACHR              
-    entry_price: 8.25        
-    shares: 390                
-    # entry_date: "2025-09-10"
   
 
 # Scheduling parameters

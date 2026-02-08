@@ -4,27 +4,14 @@ This document defines **daily-evaluated entry algorithms** for high-growth, high
 
 Goal: **enter positions with structural strength and momentum** while relying on separate protection rules to cap downside.
 
-Non-goals:
-
-- No exits or stop logic (defined elsewhere)
-- No portfolio or sizing rules
-- No prediction or discretionary confirmation
-
 All entry signals are **evaluated once per trading day at a fixed, configurable time**. If conditions are met at evaluation time, an entry signal is generated immediately.
 
 ---
 
-## Global Entry Conditions
+## Indicators
 
-The following condition applies to **all entry types**:
-
-- **Daily Close ≥ 200-day moving average (200 DMA)**
-
-If this condition is not met, **no entry is allowed**, regardless of other signals.
-
-Indicators:
-
-- 200 DMA calculated on daily data
+- 200 DMA calculated on daily data (used by some entry types and tracking)
+- 200 WMA: 1000 DMA on daily data
 - ATR(14) calculated on daily data (used by protection rules after entry)
 
 ---
@@ -36,7 +23,6 @@ Indicators:
 ### Preconditions
 
 - Stock has ≥ **252 trading days** of price history
-- Global entry condition satisfied
 
 ### Signal (evaluated daily)
 
@@ -61,7 +47,7 @@ Daily Close > ATH
 
 ### Preconditions
 
-- Global entry condition satisfied
+- None (beyond having enough history for the signal)
 
 ### Signal (evaluated daily)
 
@@ -99,7 +85,6 @@ Daily Close > Consolidation High
 
 ### Preconditions
 
-- Global entry condition satisfied
 - A valid breakout occurred previously:
   - All-time high breakout, or
   - Range breakout from a base lasting ≥ **6 months**
@@ -148,17 +133,18 @@ These rules prioritise **structural strength and momentum** while delegating ris
 
 ### Conditions
 
-A stock is tracked if:
-- **Daily Close ≤ 200 DMA × 1.05** (within 5% or below 200 SMA)
+A stock is tracked if either of these conditions are met:
+- **Daily Close ≤ 200 DMA × 1.05** (within 5% or below 200 DMA)
+- **Daily Close ≤ 200 Weekly Moving Average × 1.10** (within 10% or below 200 WMA)
 
 ### Daily Report
 
 For each tracked stock, report:
-- **Drop from all-time high:** Percentage decline from the highest close ever recorded
+- What triggered the report, 200 DMA or 200 WMA
+- **Drop from all-time high:** Percentage decline from the highest close within the last 3 years
 - **Position relative to 200 DMA:** Percentage above or below the 200-day moving average
+- **Position relative to 200 WMA:** Percentage above or below the 200-week moving average
 
 ### Notes
-
-- Tracking is informational only; no entry signals are generated
 - Reports are generated daily for all stocks meeting the conditions
 - All-time high is computed from all available historical data

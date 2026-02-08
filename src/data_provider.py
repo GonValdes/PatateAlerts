@@ -44,7 +44,7 @@ class DataProvider:
             return None
     
     def get_price_data(self, symbol: str) -> Optional[Dict[str, Any]]:
-        """Get latest price data for a symbol.
+        """Get latest price data for a symbol (most recent trading day by date).
         
         Args:
             symbol: Stock ticker symbol
@@ -57,22 +57,25 @@ class DataProvider:
             return None
         
         try:
-            # Get latest available data
-            hist = ticker.history(period="5d")
+            # Fetch recent history and take the row with the latest date (avoids relying on row order)
+            hist = ticker.history(period="1mo")
             if hist.empty:
                 logger.warning(f"No data available for {symbol}")
                 return None
             
-            latest = hist.iloc[-1]
-            latest_date = hist.index[-1].date()
+            latest_date = hist.index.max()
+            if latest_date is None:
+                return None
+            latest = hist.loc[latest_date]
+            latest_date = latest_date.date() if hasattr(latest_date, "date") else latest_date
             
             return {
-                'date': latest_date,
-                'open': float(latest['Open']),
-                'high': float(latest['High']),
-                'low': float(latest['Low']),
-                'close': float(latest['Close']),
-                'volume': int(latest['Volume'])
+                "date": latest_date,
+                "open": float(latest["Open"]),
+                "high": float(latest["High"]),
+                "low": float(latest["Low"]),
+                "close": float(latest["Close"]),
+                "volume": int(latest["Volume"]),
             }
         except Exception as e:
             logger.error(f"Error extracting price data for {symbol}: {e}")
@@ -93,9 +96,10 @@ class DataProvider:
             return []
         
         try:
-            # Fetch enough history
-            period_days = max(days, 365)  # Fetch at least 1 year
-            hist = ticker.history(period=f"{max(period_days // 365, 1)}y")
+            # Fetch enough history (use trading days ~252/year for period)
+            period_days = max(days, 365)
+            years = max((period_days // 252) + 1, 1)
+            hist = ticker.history(period=f"{years}y")
             
             if hist.empty:
                 logger.warning(f"No historical data available for {symbol}")
