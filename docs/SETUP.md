@@ -2,119 +2,64 @@
 
 ## Cross-Platform Support
 
-This application runs on both **Linux** and **Windows**.
+This application runs on both **Linux** and **Windows**. Use a **Python virtual environment** so dependencies stay isolated and the same Python is used by cron or Task Scheduler.
 
 ### Python Code
 - Uses `pathlib.Path` for cross-platform file paths
 - All file operations are platform-independent
 - SQLite database works identically on both platforms
 
+### Virtual Environment
+
+Create and activate a venv in the project directory before installing dependencies or running the app:
+
+```bash
+# Create (run from project root)
+python -m venv .venv
+```
+
+**Activate:**
+
+| Platform | Command |
+|----------|---------|
+| Linux / macOS | `source .venv/bin/activate` |
+| Windows (PowerShell) | `.venv\Scripts\Activate.ps1` |
+| Windows (Command Prompt) | `.venv\Scripts\activate.bat` |
+
+When the venv is active, your prompt usually shows `(.venv)`. Use `python` and `pip` as usual; they refer to the venv.
+
 ### Platform-Specific Setup
 
 #### Linux Setup
-1. Install dependencies:
+1. Create and activate the virtual environment (see above).
+2. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-
-2. Set up cron:
+3. Set up cron (use the venv’s Python so scheduled runs use the same environment):
    ```bash
    chmod +x scripts/setup_cron.sh
    ./scripts/setup_cron.sh
    ```
+   If editing crontab manually, run the script with the venv interpreter, e.g.:
+   ```bash
+   0 9,12,15,18 * * * cd /path/to/PatateAlerts && .venv/bin/python src/main.py >> logs/cron.log 2>&1
+   ```
 
 #### Windows Setup
-1. Install dependencies:
+1. Create and activate the virtual environment (see above).
+2. Install dependencies:
    ```powershell
    pip install -r requirements.txt
    ```
-
-2. Set up Task Scheduler (PowerShell as Administrator):
+3. Set up Task Scheduler (PowerShell as Administrator):
    ```powershell
    .\scripts\setup_task_scheduler.ps1
    ```
+   Configure the task to use the venv’s Python, e.g. `C:\path\to\PatateAlerts\.venv\Scripts\python.exe` with arguments `src/main.py` and “Start in” set to the project directory.
 
-   Or use batch script:
+   Or use the batch script:
    ```cmd
    scripts\setup_task_scheduler.bat
    ```
 
-### Configuration
-
-Both platforms use the same configuration:
-- `config/config.yaml` - Stock list and thresholds
-- `.env` - Telegram credentials (copy from `env.example`)
-
-#### Setting Up Telegram Notifications
-
-To receive alerts via Telegram, you need to set up a bot and get your credentials:
-
-**Step 1: Create a Telegram Bot**
-
-1. Open Telegram and search for `@BotFather`
-2. Start a chat with BotFather and send `/newbot`
-3. Follow the prompts to name your bot (e.g., "Stock Alert Monitor")
-4. BotFather will give you a **bot token** that looks like:
-   ```
-   123456789:ABCdefGHIjklMNOpqrsTUVwxyz
-   ```
-5. **Save this token** - you'll need it for the `.env` file
-
-**Step 2: Get Your Chat ID**
-
-1. Start a chat with your new bot (search for it by the name you gave it)
-2. Send any message to your bot (e.g., `/start` or "Hello")
-3. Open this URL in your browser (replace `YOUR_BOT_TOKEN` with your actual token):
-   ```
-   https://api.telegram.org/botYOUR_BOT_TOKEN/getUpdates
-   ```
-4. Look for a JSON response that contains `"chat":{"id":123456789}`
-5. The number after `"id":` is your **chat ID** (it's a numeric value, not a username)
-6. **Save this chat ID** - you'll need it for the `.env` file
-
-**Step 3: Configure `.env` File**
-
-1. Edit `.env` and replace the placeholder values:
-   ```env
-   TELEGRAM_BOT_TOKEN="your_bot_token_here"
-   TELEGRAM_CHAT_ID="your_chat_id_here"
-   ```
-   
-   **Important:**
-   - The bot token should be in quotes and look like: `"123456789:ABCdef..."`
-   - The chat ID should be in quotes and be a numeric value: `"123456789"`
-   - Do NOT include the `@` symbol or bot username
-
-3. Save the `.env` file
-
-**Step 4: Test Telegram Connection**
-
-Run the application:
-```bash
-python src/main.py
-```
-
-You should receive a test message in Telegram when the monitor starts. If you don't:
-- Check the logs for error messages
-- Verify your bot token is correct
-- Verify your chat ID is numeric (not a username)
-- Make sure you've sent at least one message to your bot
-
-### Running Manually
-
-Test the application on either platform:
-```bash
-# Linux
-python3 src/main.py
-
-# Windows
-python src/main.py
-```
-
-### File Paths
-
-All paths in the code use forward slashes (`/`) which work on both platforms thanks to Python's `pathlib`. The application will create:
-- `data/` directory for SQLite database
-- `logs/` directory for log files
-
-These work identically on both Linux and Windows.
