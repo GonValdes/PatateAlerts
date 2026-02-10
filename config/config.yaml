@@ -2,6 +2,7 @@
 
 # List of stocks to monitor as a high-growth watchlist (entry signals only).
 stocks:
+  - MSFT
   - QXO
   - HSPS
   - IREN
@@ -11,7 +12,7 @@ stocks:
   - TE
   - HIMS
   - PDYN
-  - RR
+  - RR.L
   - VST
   - CLS
   - SLDP
