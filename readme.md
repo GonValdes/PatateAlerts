@@ -1,62 +1,114 @@
 # Stock Alert Monitor
 
-Python app that monitors a list of stocks and sends alerts when price-based conditions are met (high-growth entry signals and per-lot exit rules). Designed to run on a schedule (e.g. Raspberry Pi or Windows) with minimal setup.
+Python app that monitors a list of stocks and sends alerts when price-based conditions are met (high-growth entry signals and per-lot exit rules). Designed to run on a schedule (e.g. Raspberry Pi or Windows) with minimal setup. Runs on **Linux** and **Windows**; use a virtual environment so cron or Task Scheduler use the same Python and dependencies.
+
+---
+
+## Prerequisites
+
+- Python 3.11 or higher
+- pip (Python package manager)
 
 ---
 
 ## Setup
 
-### Prerequisites
+### 1. Virtual environment
 
-- Python 3.11 or higher
-- pip (Python package manager)
+Create and activate a venv in the project directory:
 
-### Installation
+```bash
+python -m venv .venv
+```
 
-1. **Create and activate a virtual environment** (recommended)
-   ```bash
-   # Create
-   python -m venv .venv
+**Activate:**
 
-   # Activate: Linux/macOS
-   source .venv/bin/activate
+| Platform | Command |
+|----------|---------|
+| Linux / macOS | `source .venv/bin/activate` |
+| Windows (PowerShell) | `.venv\Scripts\Activate.ps1` |
+| Windows (Command Prompt) | `.venv\Scripts\activate.bat` |
 
-   # Activate: Windows (PowerShell)
-   .venv\Scripts\Activate.ps1
+When active, the prompt usually shows `(.venv)`.
 
-   # Activate: Windows (Command Prompt)
-   .venv\Scripts\activate.bat
+### 2. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Configure environment
+
+- Copy `env.example` to `.env`
+- If you use Telegram notifications, add your bot token and chat ID (see [Telegram setup](#telegram-notifications) below).
+
+### 4. Configure stocks
+
+Edit **`config/config.yaml`**:
+
+- **Stocks to monitor** — Under `stocks:`, list symbols for entry and tracking alerts.
+- **Bought positions** — Under `bought_positions:`, add each lot you own: `id`, `symbol`, `entry_price`, `shares`. The app evaluates exit rules and notifies when stops are hit.
+- **Settings** — Adjust scheduling, notifications, and data cache as needed.
+
+**You are responsible for keeping `config.yaml` up to date.** When you buy or sell in real life, add, remove, or update entries in `config/config.yaml` (e.g. remove a lot after you’ve sold). The app does not change your config.
+
+---
+
+## Telegram notifications
+
+To receive alerts via Telegram:
+
+**1. Create a bot** — In Telegram, open `@BotFather`, send `/newbot`, follow the prompts. Save the **bot token** (e.g. `123456789:ABCdef...`).
+
+**2. Get your Chat ID** — Send a message to your bot, then open in a browser (use your token):
    ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
+   https://api.telegram.org/botYOUR_BOT_TOKEN/getUpdates
    ```
+   Find `"chat":{"id":123456789}` — the number is your **chat ID**.
 
-3. **Configure environment**
-   - Copy `env.example` to `.env`
-   - Add your Telegram bot token and chat ID if you use Telegram notifications
+**3. Configure `.env`** — Set:
+   ```env
+   TELEGRAM_BOT_TOKEN="your_bot_token_here"
+   TELEGRAM_CHAT_ID="your_chat_id_here"
+   ```
+   Use quotes; chat ID is numeric only (no `@`).
 
-4. **Configure stocks**
-   - **Update `config/config.yaml`** with your choices:
-     - **Add stocks to monitor** — Under `stocks:`, list the symbols you want entry and tracking alerts for.
-     - **Add bought positions** — Under `bought_positions:`, add each lot you own (unique `id`, `symbol`, `entry_price`, `shares`). The app will evaluate exit rules and notify you when stops are hit.
-     - **Set settings** — Adjust scheduling, notification options, and data cache as needed in the same file.
+**4. Test** — With the venv activated, run `python src/main.py`. You should get a message in Telegram. If not: check logs, verify token and numeric chat ID, and that you’ve sent at least one message to the bot.
 
-   **You are responsible for keeping `config.yaml` up to date.** When you buy or sell in real life, add, remove, or update the corresponding entries in `config/config.yaml` (e.g. remove a lot after you’ve sold it). The app does not change your config.
+---
 
-For more detail on configuration and platform-specific setup (Telegram, cron, Task Scheduler), see **[docs/SETUP.md](docs/SETUP.md)**.
+## Scheduling
 
-### Scheduling
+The analysis runs **once per day at 19:00 (7 PM)** (configurable via cron or Task Scheduler).
 
-Run the scheduler setup with your virtual environment in mind (see [docs/SETUP.md](docs/SETUP.md) for venv-aware examples).
+### Linux (cron)
 
-- **Linux (cron):** Run `./scripts/setup_cron.sh` or add a cron entry that runs the project’s Python (e.g. `path/to/project/.venv/bin/python src/main.py`) from the project directory.
-- **Windows:** Run `.\scripts\setup_task_scheduler.ps1` (PowerShell as Administrator) or use `scripts\setup_task_scheduler.bat`.
+```bash
+chmod +x scripts/setup_cron.sh
+./scripts/setup_cron.sh
+```
 
-Details and examples are in [docs/SETUP.md](docs/SETUP.md).
+Or add to crontab manually (use the venv’s Python):
 
-### Run manually
+```bash
+0 19 * * * cd /path/to/PatateAlerts && .venv/bin/python src/main.py >> logs/cron.log 2>&1
+```
+
+### Windows (Task Scheduler)
+
+Run as Administrator:
+
+```powershell
+.\scripts\setup_task_scheduler.ps1
+```
+
+Or: `scripts\setup_task_scheduler.bat`
+
+Configure the task to use the venv’s Python (e.g. `C:\path\to\PatateAlerts\.venv\Scripts\python.exe`), arguments `src/main.py`, and “Start in” = project directory.
+
+---
+
+## Run manually
 
 Activate the virtual environment, then from the project directory:
 
@@ -64,67 +116,10 @@ Activate the virtual environment, then from the project directory:
 python src/main.py
 ```
 
+Logs go to `logs/app.log`. The app creates `data/` (SQLite) and `logs/` as needed.
+
 ---
 
 ## More information
 
-- **[docs/SETUP.md](docs/SETUP.md)** — Step-by-step setup (Telegram, cron, Task Scheduler, platform notes).
 - **[docs/REFERENCE.md](docs/REFERENCE.md)** — Architecture, design decisions, project structure, and configuration reference for contributors.
-
-#### Setting Up Telegram Notifications
-
-To receive alerts via Telegram, you need to set up a bot and get your credentials:
-
-**Step 1: Create a Telegram Bot**
-
-1. Open Telegram and search for `@BotFather`
-2. Start a chat with BotFather and send `/newbot`
-3. Follow the prompts to name your bot (e.g., "Stock Alert Monitor")
-4. BotFather will give you a **bot token** that looks like:
-   ```
-   123456789:ABCdefGHIjklMNOpqrsTUVwxyz
-   ```
-5. **Save this token** - you'll need it for the `.env` file
-
-**Step 2: Get Your Chat ID**
-
-1. Start a chat with your new bot (search for it by the name you gave it)
-2. Send any message to your bot (e.g., `/start` or "Hello")
-3. Open this URL in your browser (replace `YOUR_BOT_TOKEN` with your actual token):
-   ```
-   https://api.telegram.org/botYOUR_BOT_TOKEN/getUpdates
-   ```
-4. Look for a JSON response that contains `"chat":{"id":123456789}`
-5. The number after `"id":` is your **chat ID** (it's a numeric value, not a username)
-6. **Save this chat ID** - you'll need it for the `.env` file
-
-**Step 3: Configure `.env` File**
-
-1. Edit `.env` and replace the placeholder values:
-   ```env
-   TELEGRAM_BOT_TOKEN="your_bot_token_here"
-   TELEGRAM_CHAT_ID="your_chat_id_here"
-   ```
-   
-   **Important:**
-   - The bot token should be in quotes and look like: `"123456789:ABCdef..."`
-   - The chat ID should be in quotes and be a numeric value: `"123456789"`
-   - Do NOT include the `@` symbol or bot username
-
-3. Save the `.env` file
-
-**Step 4: Test Telegram Connection**
-
-Activate the virtual environment, then run:
-```bash
-python src/main.py
-```
-
-You should receive a test message in Telegram when the monitor starts. If you don't:
-- Check the logs for error messages
-- Verify your bot token is correct
-- Verify your chat ID is numeric (not a username)
-- Make sure you've sent at least one message to your bot
-
-### Running Manually
-

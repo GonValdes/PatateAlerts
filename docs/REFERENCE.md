@@ -1,6 +1,6 @@
 # Stock Alert Monitor — Reference
 
-Technical reference, architecture, and details for contributors. For setup and daily use, see [README](../readme.md) and [SETUP](SETUP.md).
+Technical reference, architecture, and details for contributors. For setup and daily use, see [README](../readme.md).
 
 > **IMPORTANT**: Any code change **must update this REFERENCE** (or README if it affects user-facing behavior) when it affects architecture, dependencies, behavior, or assumptions.
 
@@ -10,7 +10,7 @@ Technical reference, architecture, and details for contributors. For setup and d
 
 - Run on low-power hardware (Raspberry Pi)
 - Configurable list of stocks
-- Configurable check frequency (times per day)
+- Run once per day (e.g. 19:00 / 7 PM; cron or Task Scheduler)
 - Alert when price is below a configurable % of the 200-day SMA
 - Easy to extend with additional indicators
 - Avoid duplicate/spam alerts
@@ -95,7 +95,6 @@ stock-alert-monitor/
 │
 ├── docs/
 │   ├── REFERENCE.md       # This file — architecture and reference
-│   ├── SETUP.md           # Detailed setup (Telegram, cron, etc.)
 │   └── high-growth/       # Entry/exit rule specifications
 │
 ├── src/
@@ -153,7 +152,7 @@ Status messages include: number of watchlist stocks and bought lots processed, a
 
 ## Operational Model
 
-- Scheduler (cron on Linux, Task Scheduler on Windows) runs `main.py` at configured times.
+- Scheduler (cron on Linux, Task Scheduler on Windows) runs `main.py` once per day (e.g. 19:00 / 7 PM).
 - Script runs once and exits.
 - State is persisted only in SQLite (no long-running process).
 

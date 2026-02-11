@@ -28,13 +28,9 @@ if (-not (Test-Path $LogDir)) {
 }
 
 $TaskName = "StockAlertMonitor"
-$TaskDescription = "Runs stock alert monitor 4 times per day (9am, 12pm, 3pm, 6pm)"
+$TaskDescription = "Runs stock alert monitor once per day at 7:00 PM"
 
-# Example: Run 4 times per day at 9:00, 12:00, 15:00, and 18:00
-$Trigger1 = New-ScheduledTaskTrigger -Daily -At "9:00AM"
-$Trigger2 = New-ScheduledTaskTrigger -Daily -At "12:00PM"
-$Trigger3 = New-ScheduledTaskTrigger -Daily -At "3:00PM"
-$Trigger4 = New-ScheduledTaskTrigger -Daily -At "6:00PM"
+$Trigger = New-ScheduledTaskTrigger -Daily -At "7:00PM"
 
 $Action = New-ScheduledTaskAction -Execute $PythonPath -Argument "`"$MainScript`"" -WorkingDirectory $ProjectDir
 
@@ -43,7 +39,7 @@ $Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoi
 Write-Host "Creating scheduled task: $TaskName" -ForegroundColor Green
 Write-Host "Python: $PythonPath" -ForegroundColor Cyan
 Write-Host "Script: $MainScript" -ForegroundColor Cyan
-Write-Host "Schedule: Daily at 9:00 AM, 12:00 PM, 3:00 PM, 6:00 PM" -ForegroundColor Cyan
+Write-Host "Schedule: Daily at 7:00 PM (19:00)" -ForegroundColor Cyan
 Write-Host ""
 
 try {
@@ -56,7 +52,7 @@ try {
     }
     
     Register-ScheduledTask -TaskName $TaskName -Description $TaskDescription `
-        -Action $Action -Trigger @($Trigger1, $Trigger2, $Trigger3, $Trigger4) `
+        -Action $Action -Trigger $Trigger `
         -Settings $Settings -RunLevel Highest
     
     Write-Host "Task scheduled successfully!" -ForegroundColor Green

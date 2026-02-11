@@ -20,8 +20,8 @@ if [ ! -f "$MAIN_SCRIPT" ]; then
     exit 1
 fi
 
-# Example cron schedule: 4 times per day (9am, 12pm, 3pm, 6pm)
-CRON_SCHEDULE="0 9,12,15,18 * * *"
+# Run once per day at 19:00 (7 PM)
+CRON_SCHEDULE="0 19 * * *"
 
 CRON_LINE="$CRON_SCHEDULE cd $PROJECT_DIR && $PYTHON_PATH $MAIN_SCRIPT >> logs/cron.log 2>&1"
 

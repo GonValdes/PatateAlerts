@@ -2,7 +2,6 @@
 
 # List of stocks to monitor as a high-growth watchlist (entry signals only).
 stocks:
-  - MSFT
   - QXO
   - HSPS
   - IREN
@@ -88,12 +87,6 @@ bought_positions:
     shares: 390                
     # entry_date: "2025-09-10"
   
-
-# Scheduling parameters
-scheduling:
-  # Number of times per day to check (cron/Task Scheduler will handle actual timing)
-  checks_per_day: 4
-  # Example cron schedule: "0 9,12,15,18 * * *" (9am, 12pm, 3pm, 6pm)
 
 # Notification settings
 notifications:
