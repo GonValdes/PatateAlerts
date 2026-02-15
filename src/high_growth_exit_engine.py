@@ -20,6 +20,7 @@ class HighGrowthExitEngine:
 
     ATR_PERIOD = 14
     SMA200_PERIOD = 200
+    DMA1000_PERIOD = 1000  # 200 WMA = 1000 DMA
 
     def __init__(
         self,
@@ -109,14 +110,12 @@ class HighGrowthExitEngine:
         new_stops: List[str] = []
         exits: List[Tuple[str, int]] = []
 
-        structural_exit_shares = self._check_structural_filter(
+        self._send_negative_trend_notification_if_needed(
             symbol=symbol,
+            lot_id=lot_id,
             current_close=current_close,
             current_date=current_date,
-            state=state,
         )
-        if structural_exit_shares > 0:
-            exits.append(("Structural trend filter (weekly close < 200DMA)", structural_exit_shares))
 
         if (
             state.get("initial_stop_price") is not None
@@ -144,14 +143,14 @@ class HighGrowthExitEngine:
         state["early_failure_triggered"] = False
         self.lot_state.upsert_state(state)
 
-    def _ensure_historical_cache(self, symbol: str) -> None:
-        """Ensure we have enough history cached for ATR and SMA200."""
-        hist = self.price_history.get_historical_prices(symbol, days=260)
-        if len(hist) >= self.SMA200_PERIOD:
+    def _ensure_historical_cache(self, symbol: str, min_days: int = 260) -> None:
+        """Ensure we have enough history cached for ATR, SMA200, and optionally 1000 DMA."""
+        hist = self.price_history.get_historical_prices(symbol, days=min_days)
+        if len(hist) >= min_days:
             return
 
         logger.info("Fetching additional historical data for %s", symbol)
-        provider_hist = self.data_provider.get_historical_prices(symbol, days=260)
+        provider_hist = self.data_provider.get_historical_prices(symbol, days=min_days)
         for row in provider_hist:
             self.price_history.insert_or_update(
                 symbol=symbol,
@@ -203,23 +202,58 @@ class HighGrowthExitEngine:
             return None
         return sum(closes) / float(len(closes))
 
-    def _check_structural_filter(
+    def _compute_dma1000(self, symbol: str) -> Optional[float]:
+        """Compute 1000-day SMA (200 WMA equivalent) for negative trend notification."""
+        hist = self.price_history.get_historical_prices(symbol, days=self.DMA1000_PERIOD + 100)
+        if len(hist) < self.DMA1000_PERIOD:
+            return None
+        closes = [float(row["close"]) for row in hist[-self.DMA1000_PERIOD :]]
+        return sum(closes) / len(closes)
+
+    def _send_negative_trend_notification_if_needed(
         self,
         symbol: str,
+        lot_id: str,
         current_close: float,
         current_date: date,
-        state: Dict[str, Any],
-    ) -> int:
-        """Check structural trend filter: weekly close vs 200DMA (evaluated on Fridays)."""
-        if isinstance(current_date, str) or current_date.weekday() != 4:
-            return 0
+    ) -> None:
+        """Notify when weekly close is below 200 DMA or 200 WMA (no exit). Evaluated on Fridays."""
+        if isinstance(current_date, str):
+            try:
+                current_date = date.fromisoformat(current_date)
+            except (ValueError, TypeError):
+                return
+        if not hasattr(current_date, "weekday") or current_date.weekday() != 4:
+            return
 
         sma200 = self._compute_sma200(symbol)
-        if sma200 is None:
-            logger.warning("Not enough data for 200DMA for %s", symbol)
-            return 0
+        below_dma = sma200 is not None and current_close < sma200
 
-        return state["shares_original"] if current_close < sma200 else 0
+        self._ensure_historical_cache(symbol, min_days=self.DMA1000_PERIOD + 100)
+        dma1000 = self._compute_dma1000(symbol)
+        below_wma = dma1000 is not None and current_close < dma1000
+
+        if not below_dma and not below_wma:
+            return
+
+        reasons = []
+        if below_dma:
+            reasons.append("weekly close < 200 DMA")
+        if below_wma:
+            reasons.append("weekly close < 200 WMA")
+        message = (
+            f"Negative trend — {symbol} ({lot_id})\n"
+            f"Latest close (weekly): ${current_close:.2f}\n"
+            f"Triggered: {' and '.join(reasons)}"
+        )
+        for notifier in self.notifiers:
+            if not notifier.enabled:
+                continue
+            try:
+                notifier.send(message)
+                logger.info("Negative trend notification sent for lot %s", lot_id)
+            except Exception as exc:
+                logger.error("Failed to send negative trend notification via %s: %s", notifier.name, exc)
 
     def _maybe_define_stop1(
         self,

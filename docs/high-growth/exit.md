@@ -30,19 +30,6 @@ These values are **never recalculated**.
 
 ---
 
-## Layer - Structural Trend Filter
-
-Purpose: prevent engagement with structurally weak / slow-death stocks.
-
-**Rule:**
-
-- A stock may only be held if **weekly close ≥ 200-day moving average (200 DMA)**.
-- If weekly close < 200 DMA → **exit 100% immediately**.
-- While below 200 DMA, **no long positions are allowed**.
-
-
----
-
 ## Layer - Price-Based Early Failure Stop
 
 Purpose: provide constant downside protection against adverse price movement.
@@ -156,6 +143,19 @@ ActiveStop = max(all active Stop_i)
 ```
 
 ---
+
+## Notification - Negative trends
+
+Purpose: notify stocks enter a negative trend
+
+**Rule:**
+
+- If weekly close < 200 DMA → notification.
+- If weekly close < 200 WMA → notification.
+
+
+---
+
 
 ## Execution Notes
 

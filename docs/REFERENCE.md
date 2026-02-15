@@ -10,7 +10,7 @@ Technical reference, architecture, and details for contributors. For setup and d
 
 - Run on low-power hardware (Raspberry Pi)
 - Configurable list of stocks
-- Run once per day (e.g. 19:00 / 7 PM; cron or Task Scheduler)
+- Run once per day at 19:00, Monday–Friday only
 - Alert when price is below a configurable % of the 200-day SMA
 - Easy to extend with additional indicators
 - Avoid duplicate/spam alerts
@@ -79,7 +79,8 @@ There are **two independent alert systems**:
      - Fixed stops (early failure, +50% lock, M1–M4 stops); partial-exit triggers are one-shot per stop  
    - Once per day the system:
      - Tells you when to **add a new stop** as price moves up  
-     - Tells you when a **stop or structural rule is breached** (symbol, lot id, rule name, shares to sell)  
+     - Tells you when a **stop is breached** (symbol, lot id, rule name, shares to sell)
+     - Sends a **negative trend notification** (no exit) when weekly close is below 200 DMA or 200 WMA  
    - The system **never modifies** `config.yaml`; the user adds/removes or updates lots and watchlist in `config/config.yaml` manually (e.g. after selling).
 
 ---
@@ -152,7 +153,7 @@ Status messages include: number of watchlist stocks and bought lots processed, a
 
 ## Operational Model
 
-- Scheduler (cron on Linux, Task Scheduler on Windows) runs `main.py` once per day (e.g. 19:00 / 7 PM).
+- Scheduler (cron on Linux, Task Scheduler on Windows) runs `main.py` at configured times (e.g. 19:00); the app runs analysis only on weekdays (Monday–Friday).
 - Script runs once and exits.
 - State is persisted only in SQLite (no long-running process).
 

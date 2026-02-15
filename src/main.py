@@ -60,6 +60,12 @@ def main():
 
     logger.info("Starting stock alert monitor")
 
+    # Run only Monday–Friday (weekday: Mon=0, Sun=6)
+    today = date.today()
+    if today.weekday() > 4:  # 5=Saturday, 6=Sunday
+        logger.info("Skipping run: analysis is configured for Monday–Friday only (today is %s)", today.strftime("%A"))
+        return
+
     try:
         # Load configuration
         config = load_config()

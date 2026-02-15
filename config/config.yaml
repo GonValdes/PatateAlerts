@@ -2,21 +2,27 @@
 
 # List of stocks to monitor as a high-growth watchlist (entry signals only).
 stocks:
-  - QXO
-  - HSPS
+  #- HSPS
   - IREN
   - ASTS
   - KRKNF
   - ONDS
   - TE
-  - HIMS
   - PDYN
   - RR.L
   - VST
   - CLS
   - SLDP
+  - NOW
+  - MU
+  - MELI
+  - PLTR
   - 000660.KS # hynix
   - 005380.KS #hyundai
+  - 005930.KS # samsung
+  - 214450.KQ # pharma research
+  - 085660.KQ # cha biotech
+  - 086900.KQ # medy-tox
 # High-growth strategy: manually maintained bought positions (per-lot model)
 # Each lot is one actual buy you executed on any broker.
 # The system NEVER edits or deletes these; you manage them manually.
@@ -46,6 +52,11 @@ bought_positions:
     entry_price: 85.26        
     shares: 12                
     # entry_date: "2026-01-02"
+  - id: "ASTS2"              
+    symbol: ASTS              
+    entry_price: 83.45        
+    shares: 20                
+    # entry_date: "2026-02-26"
   - id: "Vertiv"              
     symbol: VRT              
     entry_price: 78.88        
@@ -56,6 +67,11 @@ bought_positions:
     entry_price: 27.34        
     shares: 110                
     # entry_date: "2025-09-10"
+  - id: "OKLO2"              
+    symbol: OKLO              
+    entry_price: 66.23        
+    shares: 30               
+    # entry_date: "2022-02-12"
   - id: "NuScale"              
     symbol: SMR              
     entry_price: 18.85        

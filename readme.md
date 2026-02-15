@@ -79,7 +79,7 @@ To receive alerts via Telegram:
 
 ## Scheduling
 
-The analysis runs **once per day at 19:00 (7 PM)** (configurable via cron or Task Scheduler).
+The analysis runs **once per day at 19:00 (7 PM)** and **only on weekdays (Monday–Friday)** (configurable via cron or Task Scheduler).
 
 ### Linux (cron)
 
