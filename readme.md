@@ -79,7 +79,7 @@ To receive alerts via Telegram:
 
 ## Scheduling
 
-The analysis runs **once per day at 19:00 (7 PM)** and **only on weekdays (Monday–Friday)** (configurable via cron or Task Scheduler).
+The analysis runs **once per day at 19:00 (7 PM), weekdays only (Monday–Friday)**. Configure this in cron or Task Scheduler (see below); the app does not check the day of week.
 
 ### Linux (cron)
 
@@ -88,10 +88,10 @@ chmod +x scripts/setup_cron.sh
 ./scripts/setup_cron.sh
 ```
 
-Or add to crontab manually (use the venv’s Python):
+Or add to crontab manually (use the venv’s Python). Example: weekdays only (Mon–Fri) at 19:00:
 
 ```bash
-0 19 * * * cd /path/to/PatateAlerts && .venv/bin/python src/main.py >> logs/cron.log 2>&1
+0 19 * * 1-5 cd /path/to/PatateAlerts && .venv/bin/python src/main.py >> logs/cron.log 2>&1
 ```
 
 ### Windows (Task Scheduler)

@@ -28,9 +28,9 @@ if (-not (Test-Path $LogDir)) {
 }
 
 $TaskName = "StockAlertMonitor"
-$TaskDescription = "Runs stock alert monitor once per day at 7:00 PM"
+$TaskDescription = "Runs stock alert monitor at 7:00 PM on weekdays (Mon-Fri)"
 
-$Trigger = New-ScheduledTaskTrigger -Daily -At "7:00PM"
+$Trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday, Tuesday, Wednesday, Thursday, Friday -At "7:00PM"
 
 $Action = New-ScheduledTaskAction -Execute $PythonPath -Argument "`"$MainScript`"" -WorkingDirectory $ProjectDir
 
@@ -39,7 +39,7 @@ $Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoi
 Write-Host "Creating scheduled task: $TaskName" -ForegroundColor Green
 Write-Host "Python: $PythonPath" -ForegroundColor Cyan
 Write-Host "Script: $MainScript" -ForegroundColor Cyan
-Write-Host "Schedule: Daily at 7:00 PM (19:00)" -ForegroundColor Cyan
+Write-Host "Schedule: Weekdays (Mon-Fri) at 7:00 PM (19:00)" -ForegroundColor Cyan
 Write-Host ""
 
 try {

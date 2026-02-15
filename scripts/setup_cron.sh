@@ -20,8 +20,8 @@ if [ ! -f "$MAIN_SCRIPT" ]; then
     exit 1
 fi
 
-# Run once per day at 19:00 (7 PM)
-CRON_SCHEDULE="0 19 * * *"
+# Run weekdays only (Mon–Fri) at 19:00 (7 PM); cron day 1=Monday, 5=Friday
+CRON_SCHEDULE="0 19 * * 1-5"
 
 CRON_LINE="$CRON_SCHEDULE cd $PROJECT_DIR && $PYTHON_PATH $MAIN_SCRIPT >> logs/cron.log 2>&1"
 
