@@ -74,9 +74,19 @@ class Database:
                 stop3_triggered INTEGER NOT NULL DEFAULT 0,
                 stop4_triggered INTEGER NOT NULL DEFAULT 0,
                 stop5_triggered INTEGER NOT NULL DEFAULT 0,
+                trend_below_dma_active INTEGER NOT NULL DEFAULT 0,
+                trend_below_wma_active INTEGER NOT NULL DEFAULT 0,
                 last_eval_date DATE
             )
         """)
+
+        cursor.execute("PRAGMA table_info(high_growth_lot_state)")
+        existing_columns = {row["name"] for row in cursor.fetchall()}
+        for column in ("trend_below_dma_active", "trend_below_wma_active"):
+            if column not in existing_columns:
+                cursor.execute(
+                    f"ALTER TABLE high_growth_lot_state ADD COLUMN {column} INTEGER NOT NULL DEFAULT 0"
+                )
 
         # High-growth entry state table (entry rules from docs/high-growth/entry.md)
         cursor.execute("""

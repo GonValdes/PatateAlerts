@@ -102,9 +102,19 @@ def main():
                 else:
                     logger.debug("Skipping status notification (frequency: %s)", status_frequency)
 
+        # Alert mode: which alert types (entry/exit) actually send notifications.
+        # Independent of status_frequency, which only governs the operational status message.
+        alert_mode = notifications_config.get("mode", "all")
+        if alert_mode not in ("all", "only_exit", "disabled"):
+            logger.warning("Unknown notifications.mode: %s, defaulting to 'all'", alert_mode)
+            alert_mode = "all"
+
+        entry_notifiers = notifiers if alert_mode == "all" else []
+        exit_notifiers = [] if alert_mode == "disabled" else notifiers
+
         # Initialize engines
-        high_growth_exit_engine = HighGrowthExitEngine(db, data_provider, notifiers)
-        high_growth_entry_engine = HighGrowthEntryEngine(db, data_provider, notifiers)
+        high_growth_exit_engine = HighGrowthExitEngine(db, data_provider, exit_notifiers)
+        high_growth_entry_engine = HighGrowthEntryEngine(db, data_provider, entry_notifiers)
 
         # Process watchlist stocks for high-growth entries
         stocks = config.get("stocks", [])

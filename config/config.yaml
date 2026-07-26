@@ -27,81 +27,74 @@ stocks:
 # Each lot is one actual buy you executed on any broker.
 # The system NEVER edits or deletes these; you manage them manually.
 bought_positions:
-  - id: "IREN"   # Any unique, stable ID you choose
-    symbol: IREN              # Ticker
-    entry_price: 45.37        # Executed entry price
-    shares: 30                # Number of shares bought in this lot
-    # entry_date: "2026-02-04"  # Optional, for your reference only
-  - id: "HIMS"              
-    symbol: HIMS              
-    entry_price: 28.23        
-    shares: 120                
-    # entry_date: "2026-01-02"
-  - id: "Aeroenvironment"              
-    symbol: AVAV              
-    entry_price: 284.33        
-    shares: 3                
-    # entry_date: "2026-01-02"
-  - id: "Palantir"              
-    symbol: PLTR              
-    entry_price: 90.60        
-    shares: 20                
-    # entry_date: "2026-09-10"
-  - id: "ASTS"              
-    symbol: ASTS              
-    entry_price: 85.26        
-    shares: 12                
-    # entry_date: "2026-01-02"
-  - id: "ASTS2"              
-    symbol: ASTS              
-    entry_price: 83.45        
-    shares: 20                
-    # entry_date: "2026-02-26"
-  - id: "Vertiv"              
-    symbol: VRT              
-    entry_price: 78.88        
-    shares: 95                
-    # entry_date: "2025-09-10"
-  - id: "OKLO"              
-    symbol: OKLO              
-    entry_price: 27.34        
-    shares: 110                
-    # entry_date: "2025-09-10"
-  - id: "OKLO2"              
-    symbol: OKLO              
-    entry_price: 66.23        
-    shares: 30               
-    # entry_date: "2022-02-12"
-  - id: "NuScale"              
-    symbol: SMR              
-    entry_price: 18.85        
-    shares: 180                
-    # entry_date: "2025-09-10"
-  - id: "DWave"              
-    symbol: QBTS              
-    entry_price: 29.85        
-    shares: 40                
-    # entry_date: "2026-01-02"
-  - id: "Firefly"              
-    symbol: FLY              
-    entry_price: 25.41        
-    shares: 40                
-    # entry_date: "2026-01-02"
-  - id: "Redwire"              
-    symbol: RDW              
-    entry_price: 9.55        
-    shares: 55                
-    # entry_date: "2026-01-02"
-  - id: "Joby"              
-    symbol: JOBY              
-    entry_price: 5.56        
-    shares: 600                
-    # entry_date: "2025-09-10"
-  - id: "Archer"              
-    symbol: ACHR              
-    entry_price: 8.25        
-    shares: 390                
-    # entry_date: "2025-09-10"
+  - id: "EXA"
+    symbol: EXA
+    entry_price: 97.9
+    shares: 6
+  - id: "LPK"
+    symbol: LPK
+    entry_price: 15.21
+    shares: 300
+  - id: "SIVE"
+    symbol: SIVE
+    entry_price: 27.74
+    shares: 1250
+  - id: "AAOI"
+    symbol: AAOI
+    entry_price: 91.55
+    shares: 61
+  - id: "AEHR"
+    symbol: AEHR
+    entry_price: 42.34
+    shares: 95
+  - id: "ASTS"
+    symbol: ASTS
+    entry_price: 85.19
+    shares: 62
+  - id: "CIFR"
+    symbol: CIFR
+    entry_price: 14.11
+    shares: 210
+  - id: "FLY"
+    symbol: FLY
+    entry_price: 25.41
+    shares: 40
+  - id: "HIMS"
+    symbol: HIMS
+    entry_price: 20.6
+    shares: 270
+  - id: "JOBY"
+    symbol: JOBY
+    entry_price: 5.29
+    shares: 200
+  - id: "LASR"
+    symbol: LASR
+    entry_price: 61.57
+    shares: 50
+  - id: "LITE"
+    symbol: LITE
+    entry_price: 612.86
+    shares: 6
+  - id: "NBIS"
+    symbol: NBIS
+    entry_price: 183.64
+    shares: 28
+  - id: "OKLO"
+    symbol: OKLO
+    entry_price: 37.85
+    shares: 100
+  - id: "PL"
+    symbol: PL
+    entry_price: 19.66
+    shares: 30
+  - id: "RDW"
+    symbol: RDW
+    entry_price: 9.55
+    shares: 55
+  - id: "VRT"
+    symbol: VRT
+    entry_price: 245.84
+    shares: 39
   
 
 # Notification settings
@@ -114,6 +107,10 @@ notifications:
   # Options: "every_run" (send on each scheduler execution), "weekly" (once per week), "disabled" (no status messages)
   # Start with "every_run" to verify behavior, then switch to "weekly" to minimize noise
   status_frequency: "every_run"
+
+  # Alert mode: which alert types actually fire (independent of status_frequency above)
+  # Options: "all" (entry + exit alerts), "only_exit" (exit alerts only, entry alerts suppressed), "disabled" (no alerts)
+  mode: "all"
 
 # Data settings
 data:

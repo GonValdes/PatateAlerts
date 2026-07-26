@@ -47,7 +47,8 @@ Used to store:
 
 - Cached price history
 - High-growth entry state per symbol (entry types already signalled, breakout levels)
-- High-growth per-lot exit state (ATR_entry, fixed stops, trigger flags for partial exits)
+- High-growth per-lot exit state (ATR_entry, fixed stops, trigger flags for partial exits, whether the initialization summary was already sent)
+- High-growth per-lot negative-trend state (whether the 200 DMA / 200 WMA condition is currently active, to edge-trigger notifications)
 - System status (last status notification date for weekly frequency tracking)
 
 Reasoning: zero setup, reliable, prevents duplicate alerts after restarts.
@@ -59,6 +60,10 @@ Reasoning: zero setup, reliable, prevents duplicate alerts after restarts.
   - `"every_run"`: Send status message on each scheduler execution (useful for initial verification)
   - `"weekly"`: Send status message once per week (minimizes noise)
   - `"disabled"`: No status messages (only sends actual alerts)
+- **Alert mode** (`notifications.mode`): Configurable, controls which alert *types* fire — independent of `status_frequency`, which only governs the operational status message
+  - `"all"`: Both entry alerts and exit alerts are sent (default)
+  - `"only_exit"`: Entry alerts (watchlist) are suppressed entirely; exit alerts (per-lot) still fire
+  - `"disabled"`: No entry or exit alerts are sent
 
 ### Alert Logic
 
@@ -77,11 +82,46 @@ There are **two independent alert systems**:
    - Each **lot** is one real-world buy with its own:
      - `EntryPrice`, fixed `ATR_entry`, original share size
      - Fixed stops (early failure, +50% lock, M1–M4 stops); partial-exit triggers are one-shot per stop  
-   - Once per day the system:
+   - **Initialization summary**: the first time a lot is processed (no prior stop state in SQLite), the system sends a single message listing all currently active stops for that lot. Later runs never repeat this summary — only changes are notified.
+   - On each subsequent run the system:
      - Tells you when to **add a new stop** as price moves up  
      - Tells you when a **stop is breached** (symbol, lot id, rule name, shares to sell)
-     - Sends a **negative trend notification** (no exit) when weekly close is below 200 DMA or 200 WMA  
-   - The system **never modifies** `config.yaml`; the user adds/removes or updates lots and watchlist in `config/config.yaml` manually (e.g. after selling).
+     - Sends a **negative trend notification** when weekly close newly falls below 200 DMA or 200 WMA — **edge-triggered**: it fires once when the condition transitions from false to true, is suppressed while the condition persists, and can fire again if the condition clears and re-triggers later
+   - `main.py` never modifies `config.yaml`; the user adds/removes or updates lots and watchlist manually, either by hand-editing `config/config.yaml` or via the **Telegram command listener** below.
+
+---
+
+## Telegram Command Listener
+
+A second, independent entry point — `src/telegram_command_listener.py` — lets the user manage `config/config.yaml` remotely via Telegram bot commands, instead of hand-editing the file.
+
+### Execution Model
+
+- Runs as its **own cron job**, separate from `main.py`, polling every 1-2 minutes (see `scripts/setup_cron.sh`).
+- Each invocation: fetches new Telegram updates since the last stored offset (Telegram long-poll `getUpdates`, offset persisted in `system_status`), processes any commands, replies, and exits.
+- No long-running process — consistent with the project's cron-only, run-once-and-exit execution model.
+
+### Authorization
+
+- Only messages from the chat ID configured in `.env` (`TELEGRAM_CHAT_ID`) are processed. Commands from any other chat are logged and ignored (no reply sent), so the bot cannot be driven by unauthorized users even if its token/username is discovered.
+
+### Commands
+
+| Command | Effect |
+|---|---|
+| `/add_position id=<id> symbol=<symbol> entry_price=<price> shares=<qty>` | Appends a new lot to `bought_positions`. All 4 fields are required; missing or invalid fields fail with no file change. Fails if `id` already exists. |
+| `/remove_position id=<id>` | Removes a lot from `bought_positions` by id. Fails if not found. |
+| `/add_watch <SYMBOL>` | Appends a symbol to the `stocks` watchlist. Fails if already present. |
+| `/remove_watch <SYMBOL>` | Removes a symbol from the `stocks` watchlist. Fails if not found. |
+| `/status_frequency <every_run\|weekly\|disabled>` | Sets `notifications.status_frequency`. |
+| `/mode <all\|only_exit\|disabled>` | Sets `notifications.mode`. |
+| `/help` (or `/start`) | Lists all commands. |
+
+### Behavior
+
+- **Received acknowledgment**: as soon as an authorized command message arrives, the bot immediately replies `📩 Received: <text>` before processing it, so the user has confirmation the message reached the bot even if the config edit itself fails.
+- **Result reply**: after processing, the bot replies with either a `✅` success message or a `❌` error message (e.g. missing fields, duplicate id, unknown value) — errors never partially modify the file.
+- **Config edits are line-based, not a full YAML re-parse/re-dump** (`src/config_editor.py`): each command finds and edits only the specific line(s) it targets, preserving all comments and formatting elsewhere in `config.yaml` exactly as-is. A full YAML round-trip library was tried and rejected — it reformatted/misplaced entries near comment boundaries in this hand-maintained file.
 
 ---
 
@@ -100,6 +140,8 @@ stock-alert-monitor/
 │
 ├── src/
 │   ├── main.py                    # Entry point (called by cron/scheduler)
+│   ├── telegram_command_listener.py # Remote config edits via Telegram bot commands
+│   ├── config_editor.py           # Line-based, comment-preserving config.yaml edits
 │   ├── data_provider.py           # Market data access layer
 │   ├── high_growth_entry_engine.py # High-growth entry rules (watchlist)
 │   ├── high_growth_exit_engine.py # High-growth exit rules (per-lot)
@@ -111,7 +153,7 @@ stock-alert-monitor/
 │       └── models.py      # Tables and queries
 │
 ├── scripts/
-│   ├── setup_cron.sh              # Linux cron setup
+│   ├── setup_cron.sh              # Linux cron setup (main.py + telegram_command_listener.py)
 │   ├── setup_task_scheduler.ps1   # Windows Task Scheduler (PowerShell)
 │   └── setup_task_scheduler.bat   # Windows Task Scheduler (batch)
 │
@@ -136,6 +178,10 @@ All user-adjustable parameters live in `config/config.yaml`.
   - `"every_run"`: Status message every run (good for initial verification).
   - `"weekly"`: One status message per week.
   - `"disabled"`: No status messages; only alerts.
+- **`notifications.mode`**: Which alert types are sent (independent of `status_frequency`).
+  - `"all"` (default): Entry alerts and exit alerts both fire.
+  - `"only_exit"`: Entry alerts are suppressed; exit alerts (stop additions, stop breaches, negative-trend transitions, initialization summary) still fire.
+  - `"disabled"`: No entry or exit alerts are sent.
 
 Status messages include: number of watchlist stocks and bought lots processed, and run timestamp.
 
@@ -177,3 +223,11 @@ python src/main.py
 ```
 
 Logs go to `logs/app.log` and (if configured) to Telegram.
+
+### Automated tests
+
+`tests/` covers `config_editor.py` and `telegram_command_listener.py` with no real Telegram API calls — HTTP is mocked (`unittest.mock`), and config edits run against a throwaway temp copy of `config/config.yaml`, never the real file:
+
+```bash
+python -m unittest discover -s tests
+```

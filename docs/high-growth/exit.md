@@ -17,7 +17,7 @@ Non-goals:
 - No position sizing rules
 - No discretionary overrides
 
-All exit conditions are **evaluated once per trading day at a fixed, configurable time**, using **daily closes**.
+All exit conditions are **evaluated once per trading day at a fixed, configurable time**, using **daily closes**. 
 
 ---
 
@@ -153,24 +153,33 @@ Purpose: notify stocks enter a negative trend
 - If weekly close < 200 DMA → notification.
 - If weekly close < 200 WMA → notification.
 
+**Trigger behavior (edge-triggered, one-shot):**
+
+- Each condition (below 200 DMA, below 200 WMA) is tracked per lot as an active/inactive state.
+- A notification is sent only on the **transition** from inactive → active (i.e. the first day the condition becomes true).
+- While the condition remains true on subsequent days, **no repeat notification** is sent.
+- If the condition later clears (state goes back to inactive) and is triggered again afterwards, it notifies again — this is not a once-ever alert, it fires once per new occurrence.
+
+---
+
+## Notification - Initialization Summary
+
+Purpose: give visibility into current stop levels without waiting for the next trigger.
+
+**Rule:**
+
+- The first time the exit engine runs for a lot (no prior stop state exists for it), send a single summary message listing **all currently active stops** for that lot (early failure stop, and any profit-lock/milestone stops already applicable given the current price).
+- This summary is sent once per lot, at initialization only. It is not repeated on later runs — only new stop additions, stop breaches, and negative-trend transitions are notified afterward (see relevant sections above).
 
 ---
 
 
 ## Execution Notes
 
-- Gaps below a stop exit at the first available price
 - Intraday breaches are ignored
-- After partial exits, remaining shares continue to be governed by higher stops only
-
----
-
-## System Properties (Intentional)
-
-- No trailing stops
 - No volatility re-estimation
-- No time-based profit exits
 - No selling into strength
+- Exit notifications defined here are sent under `notifications.mode: "all"` and `"only_exit"`; they are suppressed only under `notifications.mode: "disabled"` (see [REFERENCE.md](../REFERENCE.md))
 
-This exit system is designed to **cap losses early**, **lock gains progressively**, and **preserve asymmetric upside** on rare multi-bagger outcomes.
+
 

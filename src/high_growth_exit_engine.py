@@ -115,6 +115,7 @@ class HighGrowthExitEngine:
             lot_id=lot_id,
             current_close=current_close,
             current_date=current_date,
+            state=state,
         )
 
         if (
@@ -216,8 +217,14 @@ class HighGrowthExitEngine:
         lot_id: str,
         current_close: float,
         current_date: date,
+        state: Dict[str, Any],
     ) -> None:
-        """Notify when weekly close is below 200 DMA or 200 WMA (no exit). Evaluated on Fridays."""
+        """Notify when weekly close newly drops below 200 DMA or 200 WMA (no exit). Evaluated on Fridays.
+
+        Edge-triggered: fires only on the transition from inactive to active for each condition
+        (tracked per lot in state). While the condition persists, it stays silent. If the condition
+        later clears and re-triggers, it notifies again.
+        """
         if isinstance(current_date, str):
             try:
                 current_date = date.fromisoformat(current_date)
@@ -233,13 +240,19 @@ class HighGrowthExitEngine:
         dma1000 = self._compute_dma1000(symbol)
         below_wma = dma1000 is not None and current_close < dma1000
 
-        if not below_dma and not below_wma:
+        newly_below_dma = below_dma and not state.get("trend_below_dma_active")
+        newly_below_wma = below_wma and not state.get("trend_below_wma_active")
+
+        state["trend_below_dma_active"] = below_dma
+        state["trend_below_wma_active"] = below_wma
+
+        if not newly_below_dma and not newly_below_wma:
             return
 
         reasons = []
-        if below_dma:
+        if newly_below_dma:
             reasons.append("weekly close < 200 DMA")
-        if below_wma:
+        if newly_below_wma:
             reasons.append("weekly close < 200 WMA")
         message = (
             f"Negative trend — {symbol} ({lot_id})\n"

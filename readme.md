@@ -50,7 +50,7 @@ Edit **`config/config.yaml`**:
 - **Bought positions** — Under `bought_positions:`, add each lot you own: `id`, `symbol`, `entry_price`, `shares`. The app evaluates exit rules and notifies when stops are hit.
 - **Settings** — Adjust scheduling, notifications, and data cache as needed.
 
-**You are responsible for keeping `config.yaml` up to date.** When you buy or sell in real life, add, remove, or update entries in `config/config.yaml` (e.g. remove a lot after you’ve sold). The app does not change your config.
+**You are responsible for keeping `config.yaml` up to date.** When you buy or sell in real life, add, remove, or update entries in `config/config.yaml` (e.g. remove a lot after you’ve sold). `main.py` never changes your config on its own — but you can also make these edits remotely via Telegram commands instead of hand-editing the file (see [Telegram commands](#telegram-commands) below).
 
 ---
 
@@ -77,9 +77,27 @@ To receive alerts via Telegram:
 
 ---
 
+## Telegram commands
+
+Once Telegram is configured, you can also manage `config.yaml` remotely by messaging your bot commands instead of hand-editing the file — as long as the [command listener](#linux-cron) is scheduled. Send `/help` to the bot at any time for the full list. Commands:
+
+| Command | Effect |
+|---|---|
+| `/add_position id=<id> symbol=<symbol> entry_price=<price> shares=<qty>` | Add a new bought-position lot. All 4 fields are required. |
+| `/remove_position id=<id>` | Remove a bought-position lot by id. |
+| `/add_watch <SYMBOL>` | Add a symbol to the high-growth watchlist. |
+| `/remove_watch <SYMBOL>` | Remove a symbol from the high-growth watchlist. |
+| `/status_frequency <every_run\|weekly\|disabled>` | Change how often the status message is sent. |
+| `/mode <all\|only_exit\|disabled>` | Change which alerts fire: all, exit-only, or none. |
+| `/help` | List all commands. |
+
+The bot replies immediately to confirm your message was received, then replies again with the result (success or a specific error — e.g. missing fields, duplicate id). Only messages from the chat ID in your `.env` are accepted.
+
+---
+
 ## Scheduling
 
-The analysis runs **once per day at 19:00 (7 PM), weekdays only (Monday–Friday)**. Configure this in cron or Task Scheduler (see below); the app does not check the day of week.
+The analysis runs **once per day at 19:00 (7 PM), weekdays only (Monday–Friday)**. The Telegram command listener, if used, runs on its own, much more frequent schedule (e.g. every 1-2 minutes) so replies feel responsive. Configure both in cron or Task Scheduler (see below); the app does not check the day of week.
 
 ### Linux (cron)
 
@@ -88,10 +106,11 @@ chmod +x scripts/setup_cron.sh
 ./scripts/setup_cron.sh
 ```
 
-Or add to crontab manually (use the venv’s Python). Example: weekdays only (Mon–Fri) at 19:00:
+Or add to crontab manually (use the venv’s Python). Example: analysis weekdays only (Mon–Fri) at 19:00, command listener every 2 minutes:
 
 ```bash
 0 19 * * 1-5 cd /path/to/PatateAlerts && .venv/bin/python src/main.py >> logs/cron.log 2>&1
+*/2 * * * * cd /path/to/PatateAlerts && .venv/bin/python src/telegram_command_listener.py >> logs/telegram_commands_cron.log 2>&1
 ```
 
 ### Windows (Task Scheduler)

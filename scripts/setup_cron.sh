@@ -14,6 +14,7 @@ if [ -z "$PYTHON_PATH" ]; then
 fi
 
 MAIN_SCRIPT="$PROJECT_DIR/src/main.py"
+LISTENER_SCRIPT="$PROJECT_DIR/src/telegram_command_listener.py"
 
 if [ ! -f "$MAIN_SCRIPT" ]; then
     echo "Error: main.py not found at $MAIN_SCRIPT"
@@ -22,18 +23,28 @@ fi
 
 # Run weekdays only (Mon–Fri) at 19:00 (7 PM); cron day 1=Monday, 5=Friday
 CRON_SCHEDULE="0 19 * * 1-5"
-
 CRON_LINE="$CRON_SCHEDULE cd $PROJECT_DIR && $PYTHON_PATH $MAIN_SCRIPT >> logs/cron.log 2>&1"
 
-echo "Setting up cron job..."
-echo "Schedule: $CRON_SCHEDULE"
-echo "Command: $CRON_LINE"
+# Telegram command listener: poll every 2 minutes, every day
+LISTENER_SCHEDULE="*/2 * * * *"
+LISTENER_CRON_LINE="$LISTENER_SCHEDULE cd $PROJECT_DIR && $PYTHON_PATH $LISTENER_SCRIPT >> logs/telegram_commands_cron.log 2>&1"
+
+echo "Setting up cron jobs..."
 echo ""
-echo "To add this cron job, run:"
+echo "1) Daily analysis run"
+echo "   Schedule: $CRON_SCHEDULE"
+echo "   Command: $CRON_LINE"
+echo ""
+echo "2) Telegram command listener"
+echo "   Schedule: $LISTENER_SCHEDULE"
+echo "   Command: $LISTENER_CRON_LINE"
+echo ""
+echo "To add these cron jobs, run:"
 echo "crontab -e"
 echo ""
-echo "Then add this line:"
+echo "Then add these lines:"
 echo "$CRON_LINE"
+echo "$LISTENER_CRON_LINE"
 echo ""
-echo "Or run this command to add it automatically:"
-echo "(crontab -l 2>/dev/null; echo \"$CRON_LINE\") | crontab -"
+echo "Or run this command to add them automatically:"
+echo "(crontab -l 2>/dev/null; echo \"$CRON_LINE\"; echo \"$LISTENER_CRON_LINE\") | crontab -"

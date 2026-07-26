@@ -151,9 +151,11 @@ class HighGrowthLotState:
                 stop3_triggered,
                 stop4_triggered,
                 stop5_triggered,
+                trend_below_dma_active,
+                trend_below_wma_active,
                 last_eval_date
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 state["lot_id"],
@@ -180,6 +182,8 @@ class HighGrowthLotState:
                 1 if state.get("stop3_triggered") else 0,
                 1 if state.get("stop4_triggered") else 0,
                 1 if state.get("stop5_triggered") else 0,
+                1 if state.get("trend_below_dma_active") else 0,
+                1 if state.get("trend_below_wma_active") else 0,
                 state.get("last_eval_date"),
             ),
         )
@@ -215,6 +219,8 @@ class HighGrowthLotState:
             "stop3_triggered": False,
             "stop4_triggered": False,
             "stop5_triggered": False,
+            "trend_below_dma_active": False,
+            "trend_below_wma_active": False,
             "last_eval_date": None,
         }
 
