@@ -229,13 +229,18 @@ def _process_message(bot_token: str, chat_id: str, text: str) -> None:
     _send(bot_token, chat_id, reply)
 
 
+def _parse_chat_ids(raw: str) -> List[str]:
+    """TELEGRAM_CHAT_ID may hold a single id or a comma-separated list of ids."""
+    return [cid.strip() for cid in (raw or "").split(",") if cid.strip()]
+
+
 def main():
     setup_logging()
     logger.info("Checking for Telegram commands")
 
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-    authorized_chat_id = os.getenv("TELEGRAM_CHAT_ID")
-    if not bot_token or not authorized_chat_id:
+    authorized_chat_ids = _parse_chat_ids(os.getenv("TELEGRAM_CHAT_ID"))
+    if not bot_token or not authorized_chat_ids:
         logger.warning("TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured; skipping command check")
         return
 
@@ -256,11 +261,11 @@ def main():
             sender_chat_id = str(message.get("chat", {}).get("id", ""))
             text = message.get("text", "")
 
-            if sender_chat_id != str(authorized_chat_id):
+            if sender_chat_id not in authorized_chat_ids:
                 logger.warning("Ignoring command from unauthorized chat_id %s", sender_chat_id)
             else:
                 try:
-                    _process_message(bot_token, authorized_chat_id, text)
+                    _process_message(bot_token, sender_chat_id, text)
                 except Exception as exc:
                     logger.error("Error processing message: %s", exc, exc_info=True)
 

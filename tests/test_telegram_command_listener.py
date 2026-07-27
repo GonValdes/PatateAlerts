@@ -306,6 +306,34 @@ class NetworkAndOffsetTests(unittest.TestCase):
             tcl.main()
         fake_get.assert_not_called()
 
+    def test_main_accepts_command_from_any_authorized_chat_in_list(self):
+        env = {"TELEGRAM_BOT_TOKEN": "TOKEN", "TELEGRAM_CHAT_ID": "111, 222"}
+        update = {
+            "update_id": 300,
+            "message": {"chat": {"id": 222}, "text": "/add_watch NVDA"},
+        }
+        fake_get = mock.Mock(return_value=FakeResponse({"ok": True, "result": [update]}))
+        fake_post = mock.Mock(return_value=FakeResponse({"ok": True}))
+
+        with mock.patch.dict(os.environ, env, clear=False), \
+                mock.patch.object(tcl.requests, "get", fake_get), \
+                mock.patch.object(tcl.requests, "post", fake_post):
+            tcl.main()
+
+        self.assertIn("  - NVDA\n", self.config_text())
+        self.assertEqual(fake_post.call_count, 2)  # ack + result
+        # replies go back to the sender's own chat id, not the first configured id
+        for call in fake_post.call_args_list:
+            self.assertEqual(call.kwargs["json"]["chat_id"], "222")
+
+        db = Database(db_path=self.db_path)
+        self.assertEqual(tcl._get_offset(db), 301)
+
+    def test_parse_chat_ids_handles_whitespace_and_empty(self):
+        self.assertEqual(tcl._parse_chat_ids("111, 222 ,333"), ["111", "222", "333"])
+        self.assertEqual(tcl._parse_chat_ids(""), [])
+        self.assertEqual(tcl._parse_chat_ids(None), [])
+
 
 if __name__ == "__main__":
     unittest.main()

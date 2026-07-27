@@ -73,6 +73,8 @@ To receive alerts via Telegram:
    ```
    Use quotes; chat ID is numeric only (no `@`).
 
+   **Multiple users** — To send alerts to more than one person, list their chat IDs comma-separated: `TELEGRAM_CHAT_ID="111111111,222222222"`. Everyone on the list receives every alert and status message, and everyone on the list can send [Telegram commands](#telegram-commands) to the bot (each gets their own ack/result replies).
+
 **4. Test** — With the venv activated, run `python src/main.py`. You should get a message in Telegram. If not: check logs, verify token and numeric chat ID, and that you’ve sent at least one message to the bot.
 
 ---

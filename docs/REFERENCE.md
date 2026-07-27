@@ -56,6 +56,7 @@ Reasoning: zero setup, reliable, prevents duplicate alerts after restarts.
 ### Notifications
 
 - **Primary**: Telegram Bot API
+- **Multiple recipients**: `TELEGRAM_CHAT_ID` accepts a comma-separated list of chat IDs; every alert, status message, and command listener authorization applies to all of them.
 - **Status notifications**: Configurable frequency for operational status messages
   - `"every_run"`: Send status message on each scheduler execution (useful for initial verification)
   - `"weekly"`: Send status message once per week (minimizes noise)
@@ -103,7 +104,7 @@ A second, independent entry point — `src/telegram_command_listener.py` — let
 
 ### Authorization
 
-- Only messages from the chat ID configured in `.env` (`TELEGRAM_CHAT_ID`) are processed. Commands from any other chat are logged and ignored (no reply sent), so the bot cannot be driven by unauthorized users even if its token/username is discovered.
+- Only messages from chat ID(s) configured in `.env` (`TELEGRAM_CHAT_ID`) are processed. `TELEGRAM_CHAT_ID` accepts either a single chat ID or a comma-separated list (`"111,222"`) to authorize multiple users. Commands from any other chat are logged and ignored (no reply sent), so the bot cannot be driven by unauthorized users even if its token/username is discovered. Replies are sent back to the sending chat, so each authorized user only sees their own command's ack/result.
 
 ### Commands
 
